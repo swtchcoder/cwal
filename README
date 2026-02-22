@@ -2,6 +2,10 @@ cwal
 ====
 pywal uses python so i am making my own using c
 
+Requirements
+------------
+In order to build cwal you need the stb_image header file.
+
 Installation
 ------------
 

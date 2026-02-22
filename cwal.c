@@ -1,5 +1,8 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb/stb_image.h"
 #include "config.h"
 
 #ifndef VERSION
@@ -9,8 +12,11 @@
 static void usage(void);
 static void version(void);
 static void setup(void);
+static void run(void);
+static void clean(void);
 
 static char *filename;
+static unsigned char *bitmap;
 
 int
 main(int argc, char *argv[])
@@ -29,6 +35,8 @@ main(int argc, char *argv[])
 	}
 	filename = argv[1];
 	setup();
+	run();
+	clean();
 	return 0;
 }
 
@@ -50,5 +58,24 @@ version(void)
 static void
 setup(void)
 {
+	int width, height, channels;
+	const char *message;
+	bitmap = stbi_load(filename, &width, &height, &channels, 0);
+	if (!bitmap) {
+		message = stbi_failure_reason();
+		fprintf(stderr, "cwal: %s: stb_image: %s\n", filename, message);
+		exit(1);
+	}
+}
+
+static void
+run(void)
+{
 	puts(filename);
+}
+
+static void
+clean(void)
+{
+	stbi_image_free(bitmap);
 }
