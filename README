@@ -1,0 +1,8 @@
+cwal
+====
+pywal uses python so i am making my own using c
+
+Installation
+------------
+
+	make clean install
