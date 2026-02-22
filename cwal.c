@@ -20,8 +20,9 @@ typedef struct bucket_s {
 static void usage(void);
 static void version(void);
 static void setup(void);
-static void run(void);
-static void color_add(uint32_t color);
+static void count(void);
+static void bucket_add(uint32_t color);
+static void flatten(void); /* it corrupts the hashmap but who care */
 static void clean(void);
 
 static char *filename;
@@ -29,6 +30,7 @@ static unsigned char *bitmap;
 static int channels;
 static uint32_t bitmap_size;
 static bucket_t *hashmap[HASHMAP_SIZE];
+static uint32_t bucket_count;
 
 int
 main(int argc, char *argv[])
@@ -47,7 +49,8 @@ main(int argc, char *argv[])
 	}
 	filename = argv[1];
 	setup();
-	run();
+	count();
+	flatten();
 	clean();
 	return 0;
 }
@@ -87,20 +90,18 @@ setup(void)
 }
 
 static void
-run(void)
+count(void)
 {
 	uint32_t i, j;
 	for (i = 0; i < bitmap_size; i++) {
 		j = i * channels;
-		color_add(HASH(bitmap[j], bitmap[j + 1], bitmap[j + 2]));
+		bucket_add(HASH(bitmap[j], bitmap[j + 1], bitmap[j + 2]));
 	}
 }
 
-uint32_t t;
 static void
-color_add(uint32_t color)
+bucket_add(uint32_t color)
 {
-	t++;
 	uint32_t i;
 	bucket_t *bucket = NULL;
 	i = color & (HASHMAP_SIZE - 1);
@@ -113,14 +114,42 @@ color_add(uint32_t color)
 		bucket = bucket->next;
 	}
 	bucket = malloc(sizeof(bucket_t));
+	if (!bucket) {
+		perror("cwal: ");
+		clean();
+		exit(1);
+	}
 	bucket->color = color;
 	bucket->count = 1;
 	bucket->next = hashmap[i];
 	hashmap[i] = bucket;
+	bucket_count++;
+}
+
+static void
+flatten(void)
+{
+	uint32_t i, count;
+	bucket_t *bucket, *next;
+	count = 0;
+	for (i = 0; i < HASHMAP_SIZE; i++) {
+		bucket = hashmap[i];
+		while (bucket && count < HASHMAP_SIZE) {
+			next = bucket->next;
+			bucket->next = NULL;
+			hashmap[count++] = bucket;
+			bucket = next;
+		}
+	}
+	bucket_count = count;
 }
 
 static void
 clean(void)
 {
+	uint32_t i;
+	for (i = 0; i < bucket_count; i++) {
+		free(hashmap[i]);
+	}
 	stbi_image_free(bitmap);
 }
