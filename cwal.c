@@ -23,6 +23,8 @@ static void setup(void);
 static void count(void);
 static void bucket_add(uint32_t color);
 static void flatten(void); /* it corrupts the hashmap but who care */
+static void sort(void);
+static int compare(const void* a, const void* b);
 static void clean(void);
 
 static char *filename;
@@ -51,6 +53,7 @@ main(int argc, char *argv[])
 	setup();
 	count();
 	flatten();
+	sort();
 	clean();
 	return 0;
 }
@@ -142,6 +145,27 @@ flatten(void)
 		}
 	}
 	bucket_count = count;
+}
+
+static void
+sort(void)
+{
+	qsort(hashmap, bucket_count, sizeof(bucket_t *), compare);
+}
+
+static int
+compare(const void* a, const void* b)
+{
+	const bucket_t *_a = *(const bucket_t **)a;
+	const bucket_t *_b = *(const bucket_t **)b;
+
+	if (_a->count < _b->count) {
+		return 1;
+	}
+	if (_a->count > _b->count) {
+		return -1;
+	}
+	return 0;
 }
 
 static void
