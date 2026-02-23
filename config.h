@@ -1,1 +1,1 @@
-#define HASHMAP_SIZE 230400 /* 480x480 */
+#define HASHMAP_SIZE 65536 /* 2^16 */

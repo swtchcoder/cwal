@@ -9,7 +9,7 @@
 #ifndef VERSION
 	#define VERSION "unknown"
 #endif
-#define HASH(r, g, b) ((r << 16) | (g << 8) | b)
+#define HASH(r, g, b) ((r << 11) | (g << 5) | b)
 
 typedef struct bucket_s {
 	uint32_t color;
@@ -31,7 +31,7 @@ static char *filename;
 static unsigned char *bitmap;
 static int channels;
 static uint32_t bitmap_size;
-static bucket_t *hashmap[HASHMAP_SIZE];
+static bucket_t **hashmap;
 static uint32_t bucket_count;
 
 int
@@ -90,6 +90,12 @@ setup(void)
 		exit(1);
 	}
 	bitmap_size = width * height;
+	hashmap = calloc(HASHMAP_SIZE, sizeof(bucket_t *));
+	if (!hashmap) {
+		perror("cwal: ");
+		clean();
+		exit(1);
+	}
 }
 
 static void
@@ -132,19 +138,28 @@ bucket_add(uint32_t color)
 static void
 flatten(void)
 {
-	uint32_t i, count;
+	uint32_t i, j;
 	bucket_t *bucket, *next;
-	count = 0;
+	bucket_t **tmp;
+	j = 0;
+	tmp = calloc(bucket_count, sizeof(bucket_t *));
+	if (!tmp) {
+		perror("cwal: ");
+		clean();
+		exit(1);
+	}
 	for (i = 0; i < HASHMAP_SIZE; i++) {
 		bucket = hashmap[i];
-		while (bucket && count < HASHMAP_SIZE) {
+		while (bucket) {
 			next = bucket->next;
 			bucket->next = NULL;
-			hashmap[count++] = bucket;
+			tmp[j++] = bucket;
 			bucket = next;
 		}
 	}
-	bucket_count = count;
+	free(hashmap);
+	hashmap = tmp;
+	bucket_count = j;
 }
 
 static void
@@ -175,5 +190,6 @@ clean(void)
 	for (i = 0; i < bucket_count; i++) {
 		free(hashmap[i]);
 	}
+	free(hashmap);
 	stbi_image_free(bitmap);
 }
